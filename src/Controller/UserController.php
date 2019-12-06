@@ -18,7 +18,7 @@ class UserController extends FOSRestController
     /**
      * Create a User
      *
-     * @FOSRest\Post("/users")
+     * @FOSRest\Post("/")
      * @param Request $request
      * @param EntityManagerInterface $em
      * @return View
@@ -26,23 +26,49 @@ class UserController extends FOSRestController
     public function postUser(Request $request, EntityManagerInterface $em)
     {
         $user = new User();
-        $user =  $user->setName($request->get("name"));
-                      ->setEmailId($request->get("email_id"));
-                      ->setUserType($request->get("user_type"));
-                      ->setCreatedAt(new \DateTime("now"));
-                      ->setCompanyName($request->get("company_name"));
-                      ->persist($user);
+        $user =  $user->setName($request->get("name"))
+            ->setEmailId($request->get("email_id"))
+            ->setUserType($request->get("user_type"))
+            ->setCreatedAt(new \DateTime("now"))
+            ->setCompanyName($request->get("company_name"));
+        $em->persist($user);
         $em->flush();
         return View::create($user,Response::HTTP_CREATED);
+    }
+
+    /**
+     * creates users in bulk
+     *
+     * @FOSRest\Post("/dummy")
+     * @param EntityManagerInterface $em
+     * @return View
+     */
+    public function postInBulk(EntityManagerInterface $em)
+    {
+        $faker = Faker\factory::create();
+        for($i = 0; $i < 50; $i++)
+        {
+            $user = new User();
+            $user = $user->setName($faker->get("name"))
+                ->setEmailId($faker->get("name")."@gmail.com")
+                ->setUserType($faker->get("userAgent"))
+                ->setCreatedAt(new \DateTime("now"))
+                ->setCompanyName($faker->get("company"));
+            $em->persist($user);
+            $em->flush();
+        }
+
+        return new Response("added the products successfully",Response::HTTP_OK);
+
     }
 
 
     /**
      * Fetch a user
      *
-     * @FOSRest\Get("/users/{userid}")
+     * @FOSRest\Get("/{userid}")
      * @param $id
-     * @param EntityManagerInterface $em
+     *
      * @return View
      */
     public function getUsers($userid, EntityManagerInterface $em)
@@ -64,7 +90,7 @@ class UserController extends FOSRestController
     {
         $repository=$em->getRepository(User::class);
         $Userlist=$repository->findALL();
-
+        var_dump($Userlist);
         return View::create($Userlist, Response::HTTP_OK);
     }
 
@@ -72,7 +98,7 @@ class UserController extends FOSRestController
     /**
      * Deletes a user with a specific id
      *
-     * @FOSRest\Delete("/user/delete/{id}")
+     * @FOSRest\Delete("/{id}")
      * @param $id
      */
     public function deleteUser($id,EntityManagerInterface $em)
@@ -88,7 +114,7 @@ class UserController extends FOSRestController
     /**
      * Updates a User object in the database.
      *
-     * @FOSRest\Put("/user/update/{id}")
+     * @FOSRest\Put("/{id}")
      * @param $id
      * @param Request $request
      * @param EntityManagerInterface $em
@@ -97,11 +123,11 @@ class UserController extends FOSRestController
     {
         $user = $em->getRepository(User::class)->find(["id"=>$id]);
         $postdata = json_decode($request->getContent());
-        $user = $user->setName($postdata->name);
-                     ->setEmailId($postdata->email_id);
-                     ->setUserType($postdata->user_type);
-                     ->setCreatedAt(new \DateTime($postdata->created_at));
-                     ->setCompanyName($postdata->company_name);
+        $user = $user->setName($postdata->name)
+            ->setEmailId($postdata->email_id)
+            ->setUserType($postdata->user_type)
+            ->setCreatedAt(new \DateTime($postdata->created_at))
+            ->setCompanyName($postdata->company_name);
         $em->persist($user);
         $em->flush();
     }
