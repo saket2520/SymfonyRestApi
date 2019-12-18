@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Faker;
 use App\Entity\User;
 use FOS\RestBundle\Controller\Annotations as FOSRest;
 use FOS\RestBundle\Controller\FOSRestController;
@@ -26,8 +27,8 @@ class UserController extends FOSRestController
     public function postUser(Request $request, EntityManagerInterface $em)
     {
         $user = new User();
-        $user =  $user->setName($request->get("name"))
-            ->setEmailId($request->get("email_id"))
+        $user =  $user->setName($request->query->get("name"))
+            ->setEmailId($request->query->get("email_id"))
             ->setUserType($request->get("user_type"))
             ->setCreatedAt(new \DateTime("now"))
             ->setCompanyName($request->get("company_name"));
@@ -39,25 +40,25 @@ class UserController extends FOSRestController
     /**
      * creates users in bulk
      *
-     * @FOSRest\Post("/dummy")
+     * @FOSRest\Post("/users")
      * @param EntityManagerInterface $em
      * @return View
      */
-    public function postInBulk(EntityManagerInterface $em)
+    public function postUsers(EntityManagerInterface $em)
     {
-        $faker = Faker\factory::create();
-        for($i = 0; $i < 50; $i++)
+        $faker = Faker\Factory::create();
+        for($i = 0; $i < 10; $i++)
         {
             $user = new User();
-            $user = $user->setName($faker->get("name"))
-                ->setEmailId($faker->get("name")."@gmail.com")
-                ->setUserType($faker->get("userAgent"))
+            $user = $user->setName($faker->name)
+                ->setEmailId($faker->name."@gmail.com")
+                ->setUserType($faker->creditCardType)
                 ->setCreatedAt(new \DateTime("now"))
-                ->setCompanyName($faker->get("company"));
+                ->setCompanyName($faker->company);
             $em->persist($user);
-            $em->flush();
         }
 
+        $em->flush();
         return new Response("added the products successfully",Response::HTTP_OK);
 
     }
@@ -66,15 +67,15 @@ class UserController extends FOSRestController
     /**
      * Fetch a user
      *
-     * @FOSRest\Get("/{userid}")
+     * @Route("/{id<\d+>}",methods={"GET"})
      * @param $id
      *
      * @return View
      */
-    public function getUsers($userid, EntityManagerInterface $em)
+    public function getUsers($id, EntityManagerInterface $em)
     {
-        $repository=$em->getRepository(User::class);
-        $user=$repository->find(["id"=>$userid]);
+        $repository = $em->getRepository(User::class);
+        $user = $repository->find(["id"=>$id]);
         return View::create($user, Response::HTTP_OK);
     }
 
@@ -82,16 +83,15 @@ class UserController extends FOSRestController
     /**
      * Fetches all the Users From the database
      *
-     * @FOSRest\Get("/allusers")
+     * @FOSRest\Get("/users")
      * @param EntityManagerInterface $em
-     * @return View
+     * @return Response
      */
-    public function getAllUsers(EntityManagerInterface $em)
+    public function getUserCollection(EntityManagerInterface $em)
     {
-        $repository=$em->getRepository(User::class);
-        $Userlist=$repository->findALL();
-        var_dump($Userlist);
-        return View::create($Userlist, Response::HTTP_OK);
+        $repository = $em->getRepository(User::class);
+        $userlist = $repository->findALL();
+        return View::create($userlist,Response::HTTP_OK); 
     }
 
 
@@ -106,9 +106,8 @@ class UserController extends FOSRestController
         $user = $em->getRepository(User::class)->find(["id"=>$id]);
         $em->remove($user);
         $em->flush();
-        return new Response("Deleted user with user id $id successfully",Response::HTTP_OK);
+        return new Response("Deleted $id successfully",Response::HTTP_OK);
     }
-
 
 
     /**
@@ -130,5 +129,6 @@ class UserController extends FOSRestController
             ->setCompanyName($postdata->company_name);
         $em->persist($user);
         $em->flush();
+        return View::create($user,Response::HTTP_OK);
     }
 }
